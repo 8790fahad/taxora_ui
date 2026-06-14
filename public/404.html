@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Taxora</title>
+    <script>
+      // SPA fallback for GitHub Pages (based on rafgraph/spa-github-pages).
+      // GitHub Pages returns this 404.html for any unknown path. We encode the
+      // requested route into a query string and bounce to the app root, where a
+      // small script in index.html restores the real URL for React Router.
+      (function () {
+        var l = window.location;
+        var segments = l.pathname.split('/').filter(Boolean);
+        // On a GitHub project page (user.github.io/<repo>/...) keep the first
+        // path segment as the base; on user pages / custom domains use root.
+        var pathSegmentsToKeep =
+          l.hostname.endsWith('.github.io') && segments.length > 0 ? 1 : 0;
+
+        l.replace(
+          l.protocol +
+            '//' +
+            l.hostname +
+            (l.port ? ':' + l.port : '') +
+            l.pathname
+              .split('/')
+              .slice(0, 1 + pathSegmentsToKeep)
+              .join('/') +
+            '/?/' +
+            l.pathname
+              .slice(1)
+              .split('/')
+              .slice(pathSegmentsToKeep)
+              .join('/')
+              .replace(/&/g, '~and~') +
+            (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+            l.hash
+        );
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

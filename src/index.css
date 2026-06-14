@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #0f766e;
+  --color-primary-hover: #115e59;
+  --color-primary-focus: #0d9488;
+  --color-primary-light: #eef8f7;
+  --color-primary-muted: #d5eeec;
+  --color-secondary: #1e3350;
+  --color-secondary-hover: #2a3f58;
+  --color-secondary-border: #364f6b;
+  --color-secondary-text: #364f6b;
+}
+
+html {
+  scroll-padding-top: 5rem;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  @apply bg-slate-50 text-slate-900;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    background-color: var(--color-primary);
+    --tw-ring-color: var(--color-primary-focus);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border-2 px-5 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: var(--color-secondary-border);
+    color: var(--color-secondary-text);
+    --tw-ring-color: var(--color-secondary-hover);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #f4f7fa;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 transition placeholder:text-slate-400 focus:outline-none focus:ring-1;
+  }
+
+  .input-field:focus {
+    border-color: var(--color-primary-focus);
+    --tw-ring-color: var(--color-primary-focus);
+  }
+
+  .input-field-muted {
+    @apply input-field bg-slate-50;
+  }
+
+  .link-primary {
+    @apply font-medium hover:underline;
+    color: var(--color-primary);
+  }
+
+  .link-primary:hover {
+    color: var(--color-primary-hover);
+  }
+
+  .badge-success {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: var(--color-primary-muted);
+    color: var(--color-primary-hover);
+  }
+
+  .surface-brand {
+    background: linear-gradient(to bottom right, var(--color-primary-light), #ffffff);
+  }
+
+  .panel-guide {
+    @apply rounded-lg p-6 text-white shadow-lg;
+    background-color: var(--color-secondary);
+  }
+}
