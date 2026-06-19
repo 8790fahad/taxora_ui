@@ -6,11 +6,10 @@
   "homepage": "https://taxora.com.ng",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "cp index.dev.html index.html && tsc -b && vite build",
     "preview": "vite preview",
-    "build:docs": "node scripts/build-docs.mjs",
-    "predeploy": "npm run build",
-    "deploy": "node scripts/build-docs.mjs && node scripts/deploy-gh-pages.mjs"
+    "build:docs": "node scripts/publish-root.mjs",
+    "deploy": "node scripts/publish-root.mjs"
   },
   "dependencies": {
     "axios": "^1.7.9",

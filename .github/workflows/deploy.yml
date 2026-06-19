@@ -4,7 +4,13 @@ on:
   push:
     branches: [main]
     paths-ignore:
+      - 'assets/**'
+      - 'brand/**'
       - 'docs/**'
+      - 'index.html'
+      - '404.html'
+      - 'CNAME'
+      - '.nojekyll'
   workflow_dispatch:
 
 permissions:
@@ -26,26 +32,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build production site into docs/
+      - name: Build and publish to repository root
         env:
           VITE_API_URL: ${{ vars.API_URL }}
-        run: |
-          npm run build
-          rm -rf docs
-          cp -r dist docs
+        run: node scripts/publish-root.mjs
 
-      - name: Commit docs for GitHub Pages
+      - name: Commit production site files
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: Deploy production site to docs/
-          file_pattern: docs/**
+          commit_message: Deploy production site to repository root
+          file_pattern: index.html assets/** brand/** docs/** 404.html CNAME .nojekyll
           branch: main
-
-      - name: Publish to gh-pages branch (optional mirror)
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages
-          folder: dist
-          clean: true
-          single-commit: true
-          commit-message: Deploy production build
