@@ -6,9 +6,9 @@ type LegalPageProps = {
 
 const providerName = 'NEXIFOUR LTD';
 const effectiveDate = '7 June 2026';
-const contactEmail = '[contact email]';
-const websiteUrl = '[website URL]';
-const registeredAddress = '[registered address]';
+const contactEmail = 'nexifour@gmail.com';
+const websiteUrl = 'http://taxora.com.ng/';
+const location = 'Nigeria';
 
 function PageShell({
   title,
@@ -52,7 +52,7 @@ function ContactBlock() {
         <br />
         Website: <strong>{websiteUrl}</strong>
         <br />
-        Address: <strong>{registeredAddress}</strong>
+        Location: <strong>{location}</strong>
       </p>
     </>
   );

@@ -2,7 +2,23 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
 import StatusBadge from '../components/StatusBadge';
-import type { ErpConnection } from '../types';
+import type { ErpConnection, SyncSchedule } from '../types';
+
+const SYNC_SCHEDULE_OPTIONS: { value: SyncSchedule; label: string; description: string }[] = [
+  { value: 'hourly', label: 'Hourly', description: 'Sync invoices every hour' },
+  { value: 'daily', label: 'Daily', description: 'Sync invoices once per day' },
+  { value: 'weekly', label: 'Weekly', description: 'Sync invoices once per week' },
+  { value: 'off', label: 'Off', description: 'Disable automatic sync' },
+];
+
+const SYNCABLE_CONNECTORS = [
+  'quickbooks',
+  'sage',
+  'zoho',
+  'odoo',
+  'tally',
+  'flowbooks',
+];
 
 function toDateInput(iso?: string | null): string {
   if (!iso) return '';
@@ -16,9 +32,10 @@ export default function ConnectionsPage() {
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [savingDate, setSavingDate] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ErpConnection | null>(null);
   const [dateDrafts, setDateDrafts] = useState<Record<string, string>>({});
+  const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, SyncSchedule>>({});
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -33,6 +50,11 @@ export default function ConnectionsPage() {
       setDateDrafts(
         Object.fromEntries(
           data.data.map((c) => [c.id, toDateInput(c.config?.initialSyncDate)])
+        )
+      );
+      setScheduleDrafts(
+        Object.fromEntries(
+          data.data.map((c) => [c.id, c.config?.syncSchedule || 'hourly'])
         )
       );
     } finally {
@@ -50,25 +72,41 @@ export default function ConnectionsPage() {
     }
   };
 
-  const saveGoLiveDate = async (id: string) => {
-    const draft = dateDrafts[id];
-    if (!draft) return;
-    setSavingDate(id);
+  const saveSyncSettings = async (conn: ErpConnection) => {
+    const draftDate = dateDrafts[conn.id];
+    const draftSchedule = scheduleDrafts[conn.id] || 'hourly';
+    const supportsGoLive = SYNCABLE_CONNECTORS.includes(conn.connector_type);
+    const currentDate = toDateInput(conn.config?.initialSyncDate);
+    const currentSchedule = conn.config?.syncSchedule || 'hourly';
+
+    const dateChanged = supportsGoLive && draftDate && draftDate !== currentDate;
+    const scheduleChanged = draftSchedule !== currentSchedule;
+    if (!dateChanged && !scheduleChanged) return;
+
+    setSavingSettings(conn.id);
     setMessage('');
     try {
+      const payload: { initialSyncDate?: string; syncSchedule?: SyncSchedule } = {};
+      if (dateChanged && draftDate) {
+        payload.initialSyncDate = new Date(draftDate).toISOString();
+      }
+      if (scheduleChanged) {
+        payload.syncSchedule = draftSchedule;
+      }
+
       const { data } = await api.patch<{ message: string }>(
-        `/connections/${id}/sync-settings`,
-        { initialSyncDate: new Date(draft).toISOString() }
+        `/connections/${conn.id}/sync-settings`,
+        payload
       );
       setMessage(data.message);
       await loadConnections();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        'Could not save go-live date';
+        'Could not save sync settings';
       setMessage(msg);
     } finally {
-      setSavingDate(null);
+      setSavingSettings(null);
     }
   };
 
@@ -159,14 +197,17 @@ export default function ConnectionsPage() {
         <div className="grid gap-4">
           {connections.map((conn) => {
             const company = conn.config?.company;
-            const supportsGoLive = [
-              'quickbooks',
-              'sage',
-              'zoho',
-              'odoo',
-              'tally',
-              'flowbooks',
-            ].includes(conn.connector_type);
+            const supportsSyncSettings = SYNCABLE_CONNECTORS.includes(conn.connector_type);
+            const currentSchedule = conn.config?.syncSchedule || 'hourly';
+            const draftSchedule = scheduleDrafts[conn.id] || 'hourly';
+            const currentDate = toDateInput(conn.config?.initialSyncDate);
+            const draftDate = dateDrafts[conn.id] || '';
+            const hasChanges =
+              draftSchedule !== currentSchedule ||
+              (draftDate && draftDate !== currentDate);
+            const scheduleLabel =
+              SYNC_SCHEDULE_OPTIONS.find((o) => o.value === currentSchedule)?.label ||
+              'Hourly';
             return (
               <div
                 key={conn.id}
@@ -191,6 +232,11 @@ export default function ConnectionsPage() {
                       {conn.last_sync_at
                         ? `Last sync: ${new Date(conn.last_sync_at).toLocaleString()}`
                         : 'Not synced yet'}
+                      {supportsSyncSettings && (
+                        <span className="ml-2 text-slate-400">
+                          · Auto-sync: {scheduleLabel}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
@@ -211,37 +257,80 @@ export default function ConnectionsPage() {
                   </div>
                 </div>
 
-                {supportsGoLive && (
-                  <div className="mt-4 border-t border-slate-100 pt-4">
-                    <label className="block text-xs font-medium text-slate-600">
-                      Go-live date (sync invoices from this date onward)
-                    </label>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <input
-                        type="date"
-                        value={dateDrafts[conn.id] || ''}
-                        onChange={(e) =>
-                          setDateDrafts((prev) => ({ ...prev, [conn.id]: e.target.value }))
-                        }
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
-                      />
+                {supportsSyncSettings && (
+                  <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600">
+                        Automatic sync schedule
+                      </label>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        How often Taxora pulls new invoices from this ERP in the background.
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {SYNC_SCHEDULE_OPTIONS.map((option) => {
+                          const selected = draftSchedule === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() =>
+                                setScheduleDrafts((prev) => ({
+                                  ...prev,
+                                  [conn.id]: option.value,
+                                }))
+                              }
+                              className={`rounded-lg border px-3 py-2 text-left transition ${
+                                selected
+                                  ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
+                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                              }`}
+                            >
+                              <p
+                                className={`text-sm font-medium ${
+                                  selected ? 'text-primary-800' : 'text-slate-800'
+                                }`}
+                              >
+                                {option.label}
+                              </p>
+                              <p className="mt-0.5 text-xs text-slate-500">
+                                {option.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-600">
+                        Go-live date (sync invoices from this date onward)
+                      </label>
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                        <input
+                          type="date"
+                          value={draftDate}
+                          onChange={(e) =>
+                            setDateDrafts((prev) => ({ ...prev, [conn.id]: e.target.value }))
+                          }
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500"
+                        />
+                      </div>
+                      {conn.config?.initialSyncDate && (
+                        <p className="mt-1 text-xs text-slate-400">
+                          Current: {new Date(conn.config.initialSyncDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
                       <button
-                        onClick={() => saveGoLiveDate(conn.id)}
-                        disabled={
-                          savingDate === conn.id ||
-                          !dateDrafts[conn.id] ||
-                          dateDrafts[conn.id] === toDateInput(conn.config?.initialSyncDate)
-                        }
+                        onClick={() => saveSyncSettings(conn)}
+                        disabled={savingSettings === conn.id || !hasChanges}
                         className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50"
                       >
-                        {savingDate === conn.id ? 'Saving…' : 'Save'}
+                        {savingSettings === conn.id ? 'Saving…' : 'Save sync settings'}
                       </button>
                     </div>
-                    {conn.config?.initialSyncDate && (
-                      <p className="mt-1 text-xs text-slate-400">
-                        Current: {new Date(conn.config.initialSyncDate).toLocaleDateString()}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>

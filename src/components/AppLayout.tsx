@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Sidebar from './Sidebar';
 import BrandLogo from './BrandLogo';
+import MobileTabBar from './MobileTabBar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { tenant } = useAuth();
@@ -35,8 +36,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
         )}
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="p-4 pb-20 sm:p-6 lg:p-8 lg:pb-8">{children}</div>
       </main>
+
+      {/* App-style bottom navigation on mobile */}
+      <MobileTabBar />
     </div>
   );
 }

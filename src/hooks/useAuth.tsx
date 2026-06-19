@@ -21,7 +21,13 @@ interface AuthContextValue {
     tin?: string;
     nrs_business_id?: string;
     nrs_service_id?: string;
-  }) => Promise<{ message: string; email: string; devVerifyUrl?: string }>;
+    cac_verified?: boolean;
+  }) => Promise<{
+    message: string;
+    email: string;
+    profileStatus?: 'verified' | 'pending_review';
+    devVerifyUrl?: string;
+  }>;
   completeSetup: (token: string, password: string) => Promise<void>;
   logout: () => void;
   refreshMe: () => Promise<void>;
@@ -81,9 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tin?: string;
     nrs_business_id?: string;
     nrs_service_id?: string;
+    cac_verified?: boolean;
   }) => {
     const { data } = await api.post('/auth/signup', payload);
-    return data as { message: string; email: string; devVerifyUrl?: string };
+    return data as {
+      message: string;
+      email: string;
+      profileStatus?: 'verified' | 'pending_review';
+      devVerifyUrl?: string;
+    };
   };
 
   const completeSetup = async (token: string, password: string) => {

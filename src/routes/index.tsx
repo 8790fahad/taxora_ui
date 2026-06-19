@@ -14,6 +14,7 @@ import ConnectionsPage from '../pages/ConnectionsPage';
 import SettingsPage from '../pages/SettingsPage';
 import BillingPage from '../pages/BillingPage';
 import LegalPage from '../pages/LegalPage';
+import AdminProfileReviewsPage from '../pages/AdminProfileReviewsPage';
 
 function OnboardingGuard({ children }: { children: React.ReactNode }) {
   const { user, tenant, loading } = useAuth();
@@ -48,6 +49,7 @@ export default function AppRoutes() {
       <Route path="/privacy" element={<LegalPage type="privacy" />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/registration-complete" element={<RegistrationCompletePage />} />
+      <Route path="/admin/profile-reviews" element={<AdminProfileReviewsPage />} />
       <Route
         path="/onboarding"
         element={

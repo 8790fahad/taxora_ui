@@ -46,7 +46,11 @@ export default function SignupPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState<{ email: string; devVerifyUrl?: string } | null>(null);
+  const [sent, setSent] = useState<{
+    email: string;
+    profileStatus?: 'verified' | 'pending_review';
+    devVerifyUrl?: string;
+  } | null>(null);
 
   const showForm = cacVerified || manualMode;
 
@@ -80,8 +84,13 @@ export default function SignupPage() {
         tin: form.tin || undefined,
         nrs_business_id: form.nrs_business_id || undefined,
         nrs_service_id: form.nrs_service_id || undefined,
+        cac_verified: cacVerified,
       });
-      setSent({ email: res.email, devVerifyUrl: res.devVerifyUrl });
+      setSent({
+        email: res.email,
+        profileStatus: res.profileStatus,
+        devVerifyUrl: res.devVerifyUrl,
+      });
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
@@ -177,40 +186,65 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Confirmation — check your email */}
+            {/* Confirmation after signup */}
             {sent && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
-                  <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <h2 className="mt-5 text-lg font-semibold text-secondary-900">Check your email</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
-                  We sent a verification link to{' '}
-                  <span className="font-medium text-secondary-900">{sent.email}</span>. Click it to
-                  verify your address and set your password.
-                </p>
-                {sent.devVerifyUrl && (
-                  <a
-                    href={sent.devVerifyUrl}
-                    className="btn-primary mt-6 w-full sm:mx-auto sm:w-auto"
-                  >
-                    Open verification link (dev)
-                  </a>
+                {sent.profileStatus === 'pending_review' ? (
+                  <>
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <h2 className="mt-5 text-lg font-semibold text-secondary-900">
+                      Profile under review
+                    </h2>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                      We received your registration for{' '}
+                      <span className="font-medium text-secondary-900">{sent.email}</span>. Our team
+                      will verify your company profile first.
+                    </p>
+                    <p className="mx-auto mt-3 max-w-md text-sm text-slate-500">
+                      Once approved, we&apos;ll send you an email with a link to verify your
+                      address and set your password. No action is needed from you right now.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
+                      <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <h2 className="mt-5 text-lg font-semibold text-secondary-900">Check your email</h2>
+                    <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+                      We sent a verification link to{' '}
+                      <span className="font-medium text-secondary-900">{sent.email}</span>. Click it
+                      to verify your address and set your password.
+                    </p>
+                    {sent.devVerifyUrl && (
+                      <a
+                        href={sent.devVerifyUrl}
+                        className="btn-primary mt-6 w-full sm:mx-auto sm:w-auto"
+                      >
+                        Open verification link (dev)
+                      </a>
+                    )}
+                  </>
                 )}
                 <p className="mt-4 text-sm text-slate-400">
-                  Didn’t get it?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setSent(null)}
-                    className="link-primary"
-                  >
+                  Didn&apos;t get it?{' '}
+                  <button type="button" onClick={() => setSent(null)} className="link-primary">
                     Go back
                   </button>
                 </p>
@@ -370,7 +404,13 @@ export default function SignupPage() {
                   </div>
                 </section>
 
-                <div className="flex items-start gap-2 rounded-lg border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+                <div
+                  className={`flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+                    cacVerified
+                      ? 'border-primary-100 bg-primary-50 text-primary-800'
+                      : 'border-amber-100 bg-amber-50 text-amber-900'
+                  }`}
+                >
                   <svg className="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
@@ -379,8 +419,17 @@ export default function SignupPage() {
                       d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                     />
                   </svg>
-                  We’ll send a verification link to your email. You’ll set your password after
-                  confirming it.
+                  {cacVerified ? (
+                    <>
+                      We&apos;ll send a verification link to your email. You&apos;ll set your
+                      password after confirming it.
+                    </>
+                  ) : (
+                    <>
+                      Your profile will be reviewed by our team first. Once approved, we&apos;ll
+                      email you a link to verify your address and set your password.
+                    </>
+                  )}
                 </div>
 
                 <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
@@ -420,7 +469,7 @@ export default function SignupPage() {
                     disabled={loading || !acceptedTerms}
                     className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-10"
                   >
-                    {loading ? 'Sending…' : 'Register & verify email'}
+                    {loading ? 'Submitting…' : cacVerified ? 'Register & verify email' : 'Submit for review'}
                   </button>
                 </div>
               </form>

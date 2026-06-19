@@ -22,6 +22,11 @@ export interface Tenant {
   } | null;
   nrs_business_id: string | null;
   nrs_service_id: string | null;
+  logo_url: string | null;
+  logo_width: number | null;
+  logo_height: number | null;
+  profile_status?: 'verified' | 'pending_review';
+  verification_method?: string | null;
   status: string;
   onboarding: {
     register: boolean;
@@ -80,6 +85,8 @@ export interface ErpConnectionCompany {
   email?: string | null;
 }
 
+export type SyncSchedule = 'hourly' | 'daily' | 'weekly' | 'off';
+
 export interface ErpConnection {
   id: string;
   connector_type: string;
@@ -92,6 +99,7 @@ export interface ErpConnection {
     hasToken?: boolean;
     company?: ErpConnectionCompany | null;
     initialSyncDate?: string | null;
+    syncSchedule?: SyncSchedule;
   };
 }
 
