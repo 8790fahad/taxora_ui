@@ -3,6 +3,8 @@ name: Deploy frontend to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
@@ -24,12 +26,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build production site into docs/
         env:
           VITE_API_URL: ${{ vars.API_URL }}
-        run: npm run build
+        run: |
+          npm run build
+          rm -rf docs
+          cp -r dist docs
 
-      - name: Publish to gh-pages branch
+      - name: Commit docs for GitHub Pages
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Deploy production site to docs/
+          file_pattern: docs/**
+          branch: main
+
+      - name: Publish to gh-pages branch (optional mirror)
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
